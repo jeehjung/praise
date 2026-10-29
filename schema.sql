@@ -1,0 +1,3 @@
+CREATE TABLE IF NOT EXISTS people (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE COLLATE NOCASE, created_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS stickers (id INTEGER PRIMARY KEY AUTOINCREMENT, recipient_id INTEGER NOT NULL, giver_name TEXT NOT NULL, week_key TEXT NOT NULL, created_at TEXT NOT NULL, FOREIGN KEY(recipient_id) REFERENCES people(id), UNIQUE(week_key, recipient_id, giver_name COLLATE NOCASE));
+INSERT OR IGNORE INTO people(name,created_at) VALUES ('사람1',datetime('now')),('사람2',datetime('now')),('사람3',datetime('now'));
