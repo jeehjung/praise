@@ -101,11 +101,11 @@ async function init(db) {
 
 function clean(value) {
   if (typeof value !== "string") return "";
-  const text = value.trim().replace(/\\s+/g, " ");
+  const text = value.trim().replace(/\s+/g, " ");
   return text.length <= 30 ? text : "";
 }
 function validWeek(value) {
-  return typeof value === "string" && /^\\d{4}-W\\d{2}$/.test(value) ? value : null;
+  return typeof value === "string" && /^\d{4}-W\d{2}$/.test(value) ? value : null;
 }
 function isoWeek(date) {
   const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
