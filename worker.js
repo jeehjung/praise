@@ -11,8 +11,9 @@ export default {async fetch(req,env){
   if(!displayName)return json({error:"이름은 1~30자로 입력해 주세요."},400);
   if(password.length<8||password.length>128)return json({error:"비밀번호는 8~128자로 입력해 주세요."},400);
   if(await env.DB.prepare("SELECT id FROM users WHERE username=?").bind(username).first())return json({error:"이미 사용 중인 아이디입니다."},409);
-  let person=await env.DB.prepare("SELECT id FROM people WHERE name=? COLLATE NOCASE").bind(displayName).first();
+  let person=await env.DB.prepare("SELECT id,is_active FROM people WHERE name=? COLLATE NOCASE").bind(displayName).first();
   if(person&&await env.DB.prepare("SELECT id FROM users WHERE person_id=?").bind(person.id).first())return json({error:"이미 계정에 연결된 이름입니다. 다른 이름을 사용해 주세요."},409);
+  if(person&&!person.is_active)await env.DB.prepare("UPDATE people SET is_active=1 WHERE id=?").bind(person.id).run();
   if(!person){const p=await env.DB.prepare("INSERT INTO people(name,created_at) VALUES(?,?)").bind(displayName,new Date().toISOString()).run();person={id:p.meta.last_row_id};}
   const salt=randomHex(16),passwordHash=await hashPassword(password,salt);
   await env.DB.prepare("INSERT INTO users(username,display_name,password_hash,password_salt,person_id,created_at) VALUES(?,?,?,?,?,?)").bind(username,displayName,passwordHash,salt,person.id,new Date().toISOString()).run();
