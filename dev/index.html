@@ -25,6 +25,7 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{text-align:left;p
 #notice{display:none;padding:12px 14px;background:#fff3b5;border:2px solid #ffdc65;border-radius:15px;margin-bottom:12px;font-weight:800}#notice.show{display:block}
 .empty{padding:18px;text-align:center;color:var(--muted);font-weight:700}.hero-tip{margin:0 auto 15px;padding:12px 16px;border-radius:18px;background:#fff;border:2px dashed #c7cfff;text-align:center;font-weight:800;color:#5d6793}
 @media(max-width:480px){main{padding:12px}.row button{width:100%}section{padding:15px}.cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.person{padding:12px}.person h3{font-size:17px}.count{font-size:28px}.give{font-size:13px;padding:10px 5px}}
+ .latest-update{max-width:900px;margin:0 auto;padding:8px 16px 24px;text-align:center;color:#9299b2;font-size:12px;font-weight:600}
 </style><style>
 .auth-panel{max-width:480px;margin:20px auto;background:#fff;border:2px solid #dfe4ff;border-radius:24px;padding:22px;box-shadow:0 6px 0 #e9eaff}
 .auth-panel h2{text-align:center;margin:0 0 8px;font-size:24px}.auth-panel p{text-align:center;color:#78819d;font-size:14px}
@@ -58,8 +59,11 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{text-align:left;p
 <section><h3>📖 칭찬 추억 모아보기</h3><div id="records" class="empty">불러오는 중…</div></section>
 <p class="muted" style="text-align:center">기록은 공용 서버에 저장되어 누구나 확인할 수 있습니다.</p>
 </div></main>
+<footer id="latestUpdate" class="latest-update">Latest update: 확인 중…</footer>
 <script>
 const API_BASE="https://praise-sticker-app-dev.jeeh.workers.dev";
+const updatedAt=new Date(document.lastModified);$("latestUpdate").textContent="Latest update: "+(Number.isNaN(updatedAt.getTime())?"확인 불가":updatedAt.toLocaleString("ko-KR",{year:"numeric",month:"2-digit",day:"2-digit",hour:"2-digit",minute:"2-digit"}));
+
 const $=id=>document.getElementById(id);let state=null,authMode="login",currentUser=null;
 function note(message){const target=$("authPanel").hidden?$("notice"):$("authNotice");target.textContent=message;target.className="show";setTimeout(()=>target.className="",7000)}
 function esc(value){return String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
