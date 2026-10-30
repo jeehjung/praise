@@ -43,8 +43,8 @@ export default {async fetch(req,env){
   const b=await req.json(),id=Number(b.recipientId),week=validWeek(b.week)||isoWeek(new Date());
   if(!Number.isInteger(id)||id<1)return json({error:"칭찬받는 사람을 선택해 주세요."},400);
   if(!await env.DB.prepare("SELECT id FROM people WHERE id=?").bind(id).first())return json({error:"대상을 찾을 수 없습니다."},404);
-  if(await env.DB.prepare("SELECT id FROM stickers WHERE week_key=? AND recipient_id=? AND giver_name=? COLLATE NOCASE").bind(week,id,user.username).first())return json({error:"이번 주에는 이 친구에게 이미 스티커를 줬어요."},409);
-  await env.DB.prepare("INSERT INTO stickers(recipient_id,giver_name,week_key,created_at) VALUES(?,?,?,?)").bind(id,user.username,week,new Date().toISOString()).run();return json({ok:true},201);
+  if(await env.DB.prepare("SELECT id FROM stickers WHERE week_key=? AND recipient_id=? AND giver_name=? COLLATE NOCASE").bind(week,id,user.display_name).first())return json({error:"이번 주에는 이 친구에게 이미 스티커를 줬어요."},409);
+  await env.DB.prepare("INSERT INTO stickers(recipient_id,giver_name,week_key,created_at) VALUES(?,?,?,?)").bind(id,user.display_name,week,new Date().toISOString()).run();return json({ok:true},201);
  }
  return json({error:"Not found"},404);
  }catch(e){return json({error:"서버 오류",detail:String(e.message||e)},500)}
