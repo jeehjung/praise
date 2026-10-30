@@ -25,36 +25,60 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{text-align:left;p
 #notice{display:none;padding:12px 14px;background:#fff3b5;border:2px solid #ffdc65;border-radius:15px;margin-bottom:12px;font-weight:800}#notice.show{display:block}
 .empty{padding:18px;text-align:center;color:var(--muted);font-weight:700}.hero-tip{margin:0 auto 15px;padding:12px 16px;border-radius:18px;background:#fff;border:2px dashed #c7cfff;text-align:center;font-weight:800;color:#5d6793}
 @media(max-width:480px){main{padding:12px}.row button{width:100%}section{padding:15px}.cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.person{padding:12px}.person h3{font-size:17px}.count{font-size:28px}.give{font-size:13px;padding:10px 5px}}
+</style><style>
+.auth-panel{max-width:480px;margin:20px auto;background:#fff;border:2px solid #dfe4ff;border-radius:24px;padding:22px;box-shadow:0 6px 0 #e9eaff}
+.auth-panel h2{text-align:center;margin:0 0 8px;font-size:24px}.auth-panel p{text-align:center;color:#78819d;font-size:14px}
+.auth-panel .field{margin:12px 0}.auth-panel button{width:100%;margin-top:8px}.auth-switch{background:none;border:0;box-shadow:none;color:#5367bd;text-decoration:underline}
+#appContent[hidden],#authPanel[hidden]{display:none}
+.account-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;background:#fff;border:2px solid #e8eaff;border-radius:18px;padding:12px 15px;margin:0 0 14px;font-weight:800}
+.account-bar button{padding:8px 12px}
 </style>
 </head>
 <body>
 <header><h1>🧪 칭찬 스티커 모험 · 개발</h1><p>테스트 공간에서 신나게 칭찬 탐험! ✨</p></header>
-<main><div class="hero-tip">💖 오늘의 미션: 친구의 멋진 점을 찾아 칭찬 스티커를 선물해요!</div><div id="notice"></div>
-<section><h3>🙋 칭찬 탐험대원</h3><div class="row"><div class="field"><label for="giver">내 이름</label><input id="giver" maxlength="30" placeholder="예: 홍길동"></div><button id="save" class="soft">⭐ 내 이름 저장</button></div><p class="muted">이름은 이 브라우저에 저장됩니다. 다른 기기에서는 다시 입력해 주세요.</p></section>
+<main>
+<section id="authPanel" class="auth-panel">
+ <h2 id="authTitle">🔐 로그인</h2><p id="authDescription">내 계정으로 로그인하고 칭찬 스티커를 모아요!</p>
+ <form id="authForm">
+  <div class="field"><label for="authUsername">아이디</label><input id="authUsername" autocomplete="username" minlength="4" maxlength="20" pattern="[A-Za-z0-9_]+" required placeholder="영문 소문자·숫자·밑줄 4~20자"></div>
+  <div class="field"><label for="authPassword">비밀번호</label><input id="authPassword" type="password" autocomplete="current-password" minlength="8" maxlength="128" required placeholder="8자 이상"></div>
+  <div class="field" id="displayNameField" hidden><label for="authDisplayName">내 이름</label><input id="authDisplayName" maxlength="30" placeholder="친구들에게 보여줄 이름"></div>
+  <button class="primary" id="authSubmit">로그인</button>
+ </form>
+ <button type="button" class="auth-switch" id="authToggle">처음 왔나요? 회원가입</button>
+ <p class="muted">비밀번호는 암호화해 저장하며, 다른 사람에게 공개되지 않습니다.</p>
+</section>
+<div id="appContent" hidden>
+<div class="account-bar"><span id="accountLabel">🙋 로그인됨</span><button id="logout" class="soft">로그아웃</button></div>
+<div class="hero-tip">💖 오늘의 미션: 친구의 멋진 점을 찾아 칭찬 스티커를 선물해요!</div><div id="notice"></div>
+
 <section class="row" style="justify-content:space-between"><div><h3>🏆 이번 주 칭찬 현황</h3><span class="muted">월요일~일요일 기준</span></div><div><label for="week">조회할 주</label><input id="week" type="week"></div></section>
 <section><h3>🎁 친구에게 스티커 선물하기</h3><div id="people" class="cards"><div class="empty">불러오는 중…</div></div></section>
 <section><h3>➕ 새로운 친구 등록하기</h3><form id="add" class="row"><div class="field"><label for="newname">이름</label><input id="newname" maxlength="30" required placeholder="예: 사람4"></div><button class="primary">🎈 친구 추가</button></form></section>
 <section><h3>📖 칭찬 추억 모아보기</h3><div id="records" class="empty">불러오는 중…</div></section>
 <p class="muted" style="text-align:center">기록은 공용 서버에 저장되어 누구나 확인할 수 있습니다.</p>
-</main>
+</div></main>
 <script>
 const API_BASE="https://praise-sticker-app-dev.jeeh.workers.dev";
-const $=id=>document.getElementById(id);let state=null;
-$("giver").value=localStorage.getItem("praiseGiverName")||"";
-function currentWeek(){const d=new Date(),day=(d.getDay()+6)%7;d.setDate(d.getDate()-day+3);const f=new Date(d.getFullYear(),0,4);return d.getFullYear()+"-W"+String(1+Math.round(((d-f)/86400000-3+((f.getDay()+6)%7))/7)).padStart(2,"0")}
-$("week").value=currentWeek();
+const $=id=>document.getElementById(id);let state=null,authMode="login",currentUser=null;
 function note(message){$("notice").textContent=message;$("notice").className="show";setTimeout(()=>$("notice").className="",4000)}
 function esc(value){return String(value).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
-async function api(path,options){const response=await fetch(API_BASE+path,options),data=await response.json();if(!response.ok)throw Error(data.error||"요청 실패");return data}
-async function load(){try{state=await api("/api/state?week="+encodeURIComponent($("week").value||currentWeek()));render()}catch(error){note("불러오기 실패: "+error.message);$("people").innerHTML='<div class="empty">서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요.</div>'}}
-function render(){if(!state)return;const giver=$("giver").value.trim();
-$("people").innerHTML=state.people.map(person=>'<article class="person"><div class="avatar">🌟</div><h3>'+esc(person.name)+'</h3><span class="muted">이번 주 받은 칭찬</span><div class="count">'+person.stickers+'개</div><button class="primary give" data-id="'+person.id+'" '+(!giver?"disabled":"")+'>💝 칭찬 선물하기</button></article>').join("")||'<div class="empty">등록된 사람이 없습니다.</div>';
-document.querySelectorAll(".give").forEach(button=>button.onclick=async()=>{const name=$("giver").value.trim();if(!name||!localStorage.getItem("praiseGiverName"))return note("이름을 입력하고 먼저 이름 저장을 눌러 주세요.");button.disabled=true;try{await api("/api/stickers",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({recipientId:+button.dataset.id,giverName:name,week:$("week").value||currentWeek()})});note("🎉 멋져요! 칭찬 스티커를 선물했어요!");await load()}catch(error){note(error.message);button.disabled=false}});
+async function api(path,options={}){const headers={...(options.headers||{})};const token=localStorage.getItem("praiseAuthToken");if(token)headers.Authorization="Bearer "+token;if(options.body&&!headers["Content-Type"])headers["Content-Type"]="application/json";const response=await fetch(API_BASE+path,{...options,headers});const data=await response.json();if(!response.ok)throw Error(data.error||"요청 실패");return data}
+function setMode(mode){authMode=mode;$("authTitle").textContent=mode==="login"?"🔐 로그인":"🎉 새 계정 만들기";$("authDescription").textContent=mode==="login"?"내 계정으로 로그인하고 칭찬 스티커를 모아요!":"아이디와 비밀번호를 만들고 칭찬 탐험을 시작해요!";$("authSubmit").textContent=mode==="login"?"로그인":"회원가입";$("displayNameField").hidden=mode==="login";$("authPassword").autocomplete=mode==="login"?"current-password":"new-password";$("authToggle").textContent=mode==="login"?"처음 왔나요? 회원가입":"이미 계정이 있나요? 로그인"}
+$("authToggle").onclick=()=>setMode(authMode==="login"?"register":"login");
+$("authForm").onsubmit=async e=>{e.preventDefault();const body={username:$("authUsername").value.trim().toLowerCase(),password:$("authPassword").value};if(authMode==="register")body.displayName=$("authDisplayName").value.trim();try{const data=await api(authMode==="login"?"/api/auth/login":"/api/auth/register",{method:"POST",body:JSON.stringify(body)});localStorage.setItem("praiseAuthToken",data.token);currentUser=data.user;$("authPassword").value="";await showApp()}catch(error){note(error.message)}};
+$("logout").onclick=async()=>{try{await api("/api/auth/logout",{method:"POST"})}catch{}localStorage.removeItem("praiseAuthToken");currentUser=null;state=null;$("appContent").hidden=true;$("authPanel").hidden=false;note("로그아웃했어요.")};
+async function showApp(){try{const me=await api("/api/auth/me");currentUser=me.user;$("accountLabel").textContent="🙋 "+currentUser.display_name+" ("+currentUser.username+")";$("authPanel").hidden=true;$("appContent").hidden=false;await load()}catch(e){localStorage.removeItem("praiseAuthToken");$("appContent").hidden=true;$("authPanel").hidden=false}}
+function currentWeek(){const d=new Date(),day=(d.getDay()+6)%7;d.setDate(d.getDate()-day+3);const f=new Date(d.getFullYear(),0,4);return d.getFullYear()+"-W"+String(1+Math.round(((d-f)/86400000-3+((f.getDay()+6)%7))/7)).padStart(2,"0")}
+$("week").value=currentWeek();
+async function load(){try{state=await api("/api/state?week="+encodeURIComponent($("week").value||currentWeek()));render()}catch(error){note("불러오기 실패: "+error.message)}}
+function render(){if(!state)return;
+$("people").innerHTML=state.people.map(person=>'<article class="person"><div class="avatar">🌟</div><h3>'+esc(person.name)+'</h3><span class="muted">이번 주 받은 칭찬</span><div class="count">'+person.stickers+'개</div><button class="primary give" data-id="'+person.id+'">💝 칭찬 선물하기</button></article>').join("")||'<div class="empty">등록된 친구가 없습니다.</div>';
+document.querySelectorAll(".give").forEach(button=>button.onclick=async()=>{button.disabled=true;try{await api("/api/stickers",{method:"POST",body:JSON.stringify({recipientId:+button.dataset.id,week:$("week").value||currentWeek()})});note("🎉 멋져요! 칭찬 스티커를 선물했어요!");await load()}catch(error){note(error.message);button.disabled=false}});
 $("records").innerHTML=state.recent.length?'<table><thead><tr><th>받은 사람</th><th>준 사람</th><th>시간</th></tr></thead><tbody>'+state.recent.map(record=>'<tr><td>'+esc(record.recipient)+'</td><td>'+esc(record.giver_name)+'</td><td>'+new Date(record.created_at).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})+'</td></tr>').join("")+'</tbody></table>':'<div class="empty">이 주에는 아직 기록이 없습니다.</div>'}
-$("save").onclick=()=>{const name=$("giver").value.trim();if(!name)return note("이름을 입력해 주세요.");localStorage.setItem("praiseGiverName",name);note("이름을 저장했습니다.");render()};
-$("giver").oninput=render;$("week").onchange=load;
-$("add").onsubmit=async event=>{event.preventDefault();try{await api("/api/people",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({name:$("newname").value.trim()})});$("newname").value="";note("대상을 추가했습니다.");await load()}catch(error){note(error.message)}};
-load();
+$("week").onchange=load;
+$("add").onsubmit=async event=>{event.preventDefault();try{await api("/api/people",{method:"POST",body:JSON.stringify({name:$("newname").value.trim()})});$("newname").value="";note("친구를 추가했어요!");await load()}catch(error){note(error.message)}};
+setMode("login");if(localStorage.getItem("praiseAuthToken"))showApp();
 </script>
 </body>
 </html>
