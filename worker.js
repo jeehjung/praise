@@ -1,4 +1,4 @@
-const ALLOWED_ORIGINS=new Set(["https://jeehjung.github.io"]),SESSION_DAYS=30,PBKDF2_ITERATIONS=210000;
+const ALLOWED_ORIGINS=new Set(["https://jeehjung.github.io"]),SESSION_DAYS=30,PBKDF2_ITERATIONS=100000;
 export default {async fetch(req,env){
  const url=new URL(req.url),origin=req.headers.get("Origin")||"",cors={"Access-Control-Allow-Methods":"GET,POST,OPTIONS","Access-Control-Allow-Headers":"Content-Type,Authorization","Vary":"Origin"};
  if(ALLOWED_ORIGINS.has(origin))cors["Access-Control-Allow-Origin"]=origin;
