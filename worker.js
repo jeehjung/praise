@@ -29,20 +29,27 @@ export default {async fetch(req,env){
  if(url.pathname==="/api/state"&&req.method==="GET"){
   const user=await authenticate(req,env.DB);if(!user)return json({error:"로그인이 필요합니다."},401);
   const week=validWeek(url.searchParams.get("week"))||isoWeek(new Date());
-  const p=await env.DB.prepare("SELECT id,name FROM people ORDER BY id").all(),c=await env.DB.prepare("SELECT recipient_id,COUNT(*) count FROM stickers WHERE week_key=? GROUP BY recipient_id").bind(week).all(),r=await env.DB.prepare("SELECT s.id,s.week_key,s.created_at,p.name recipient,s.giver_name FROM stickers s JOIN people p ON p.id=s.recipient_id WHERE s.week_key=? ORDER BY s.created_at DESC LIMIT 300").bind(week).all();
+  const p=await env.DB.prepare("SELECT id,name FROM people WHERE is_active=1 ORDER BY name COLLATE NOCASE").all(),c=await env.DB.prepare("SELECT recipient_id,COUNT(*) count FROM stickers WHERE week_key=? GROUP BY recipient_id").bind(week).all(),r=await env.DB.prepare("SELECT s.id,s.week_key,s.created_at,p.name recipient,s.giver_name FROM stickers s JOIN people p ON p.id=s.recipient_id WHERE s.week_key=? ORDER BY s.created_at DESC LIMIT 300").bind(week).all();
   const counts=Object.fromEntries(c.results.map(x=>[x.recipient_id,x.count]));return json({week,user,people:p.results.map(x=>({...x,stickers:counts[x.id]||0})),recent:r.results});
  }
  if(url.pathname==="/api/people"&&req.method==="POST"){
   if(!await authenticate(req,env.DB))return json({error:"로그인이 필요합니다."},401);
   const b=await req.json(),n=clean(b.name);if(!n)return json({error:"이름은 1~30자로 입력해 주세요."},400);
-  if(await env.DB.prepare("SELECT id FROM people WHERE name=? COLLATE NOCASE").bind(n).first())return json({error:"이미 등록된 이름입니다."},409);
-  await env.DB.prepare("INSERT INTO people(name,created_at) VALUES(?,?)").bind(n,new Date().toISOString()).run();return json({ok:true},201);
+  const existing=await env.DB.prepare("SELECT id,is_active FROM people WHERE name=? COLLATE NOCASE").bind(n).first();
+  if(existing){if(existing.is_active)return json({error:"이미 등록된 이름입니다."},409);await env.DB.prepare("UPDATE people SET is_active=1 WHERE id=?").bind(existing.id).run();return json({ok:true,reactivated:true},200);}
+  await env.DB.prepare("INSERT INTO people(name,created_at,is_active) VALUES(?,?,1)").bind(n,new Date().toISOString()).run();return json({ok:true},201);
+ }
+ if(url.pathname.startsWith("/api/people/")&&req.method==="DELETE"){
+  if(!await authenticate(req,env.DB))return json({error:"로그인이 필요합니다."},401);
+  const id=Number(url.pathname.split("/").pop());if(!Number.isInteger(id)||id<1)return json({error:"잘못된 회원 번호입니다."},400);
+  const person=await env.DB.prepare("SELECT id,is_active FROM people WHERE id=?").bind(id).first();if(!person||!person.is_active)return json({error:"회원을 찾을 수 없습니다."},404);
+  await env.DB.prepare("UPDATE people SET is_active=0 WHERE id=?").bind(id).run();return json({ok:true},200);
  }
  if(url.pathname==="/api/stickers"&&req.method==="POST"){
   const user=await authenticate(req,env.DB);if(!user)return json({error:"로그인이 필요합니다."},401);
   const b=await req.json(),id=Number(b.recipientId),week=validWeek(b.week)||isoWeek(new Date());
   if(!Number.isInteger(id)||id<1)return json({error:"칭찬받는 사람을 선택해 주세요."},400);
-  if(!await env.DB.prepare("SELECT id FROM people WHERE id=?").bind(id).first())return json({error:"대상을 찾을 수 없습니다."},404);
+  if(!await env.DB.prepare("SELECT id FROM people WHERE id=? AND is_active=1").bind(id).first())return json({error:"대상을 찾을 수 없습니다."},404);
   if(await env.DB.prepare("SELECT id FROM stickers WHERE week_key=? AND recipient_id=? AND giver_name=? COLLATE NOCASE").bind(week,id,user.display_name).first())return json({error:"이번 주에는 이 친구에게 이미 스티커를 줬어요."},409);
   await env.DB.prepare("INSERT INTO stickers(recipient_id,giver_name,week_key,created_at) VALUES(?,?,?,?)").bind(id,user.display_name,week,new Date().toISOString()).run();return json({ok:true},201);
  }
@@ -51,10 +58,11 @@ export default {async fetch(req,env){
 }};
 async function init(db){
  await db.prepare("CREATE TABLE IF NOT EXISTS people(id INTEGER PRIMARY KEY AUTOINCREMENT,name TEXT NOT NULL UNIQUE COLLATE NOCASE,created_at TEXT NOT NULL)").run();
+ try{await db.prepare("ALTER TABLE people ADD COLUMN is_active INTEGER NOT NULL DEFAULT 1").run()}catch(e){if(!String(e.message||e).toLowerCase().includes("duplicate column"))throw e;}
+ await db.prepare("UPDATE people SET is_active=0 WHERE name IN ('사람1','사람2','사람3') AND NOT EXISTS(SELECT 1 FROM stickers WHERE stickers.recipient_id=people.id) AND NOT EXISTS(SELECT 1 FROM users WHERE users.person_id=people.id)").run();
  await db.prepare("CREATE TABLE IF NOT EXISTS stickers(id INTEGER PRIMARY KEY AUTOINCREMENT,recipient_id INTEGER NOT NULL,giver_name TEXT NOT NULL,week_key TEXT NOT NULL,created_at TEXT NOT NULL,FOREIGN KEY(recipient_id) REFERENCES people(id),UNIQUE(week_key,recipient_id,giver_name COLLATE NOCASE))").run();
  await db.prepare("CREATE TABLE IF NOT EXISTS users(id INTEGER PRIMARY KEY AUTOINCREMENT,username TEXT NOT NULL UNIQUE,display_name TEXT NOT NULL,password_hash TEXT NOT NULL,password_salt TEXT NOT NULL,person_id INTEGER NOT NULL UNIQUE,created_at TEXT NOT NULL,FOREIGN KEY(person_id) REFERENCES people(id))").run();
  await db.prepare("CREATE TABLE IF NOT EXISTS sessions(id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER NOT NULL,token_hash TEXT NOT NULL UNIQUE,expires_at TEXT NOT NULL,created_at TEXT NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id))").run();
- const x=await db.prepare("SELECT COUNT(*) n FROM people").first();if(!x.n)for(const n of ["사람1","사람2","사람3"])await db.prepare("INSERT OR IGNORE INTO people(name,created_at) VALUES(?,?)").bind(n,new Date().toISOString()).run();
 }
 async function authenticate(req,db){const t=bearer(req);if(!t)return null;const u=await db.prepare("SELECT u.id,u.username,u.display_name FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>?").bind(await sha256(t),new Date().toISOString()).first();return u||null}
 async function issueSession(db,u){const token=randomHex(32),now=new Date(),expires=new Date(now.getTime()+SESSION_DAYS*86400000).toISOString();await db.prepare("INSERT INTO sessions(user_id,token_hash,expires_at,created_at) VALUES(?,?,?,?)").bind(u.id,await sha256(token),expires,now.toISOString()).run();return{token,expiresAt:expires,user:{id:u.id,username:u.username,display_name:u.display_name}}}
