@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - "index.html"
+      - "dev/**"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
