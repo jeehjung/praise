@@ -30,8 +30,8 @@ export default {async fetch(req,env){
  if(url.pathname==="/api/state"&&req.method==="GET"){
   const user=await authenticate(req,env.DB);if(!user)return json({error:"로그인이 필요합니다."},401);
   const week=validWeek(url.searchParams.get("week"))||isoWeek(new Date());
-  const p=await env.DB.prepare("SELECT id,name FROM people WHERE is_active=1 ORDER BY name COLLATE NOCASE").all(),c=await env.DB.prepare("SELECT recipient_id,COUNT(*) count FROM stickers WHERE week_key=? GROUP BY recipient_id").bind(week).all(),r=await env.DB.prepare("SELECT s.id,s.week_key,s.created_at,p.name recipient,s.giver_name FROM stickers s JOIN people p ON p.id=s.recipient_id WHERE s.week_key=? ORDER BY s.created_at DESC LIMIT 300").bind(week).all();
-  const counts=Object.fromEntries(c.results.map(x=>[x.recipient_id,x.count]));return json({week,user,people:p.results.map(x=>({...x,stickers:counts[x.id]||0})),recent:r.results});
+  const p=await env.DB.prepare("SELECT p.id,p.name,COUNT(s.id) total_stickers,SUM(CASE WHEN s.week_key=? THEN 1 ELSE 0 END) week_stickers,SUM(CASE WHEN substr(s.created_at,1,7)=? THEN 1 ELSE 0 END) month_stickers FROM people p LEFT JOIN stickers s ON s.recipient_id=p.id WHERE p.is_active=1 GROUP BY p.id,p.name ORDER BY p.name COLLATE NOCASE").bind(week,new Date().toISOString().slice(0,7)).all(),r=await env.DB.prepare("SELECT s.id,s.week_key,s.created_at,p.name recipient,s.giver_name FROM stickers s JOIN people p ON p.id=s.recipient_id WHERE s.week_key=? ORDER BY s.created_at DESC LIMIT 300").bind(week).all();
+  return json({week,user,people:p.results.map(x=>({...x,stickers:x.week_stickers||0})),recent:r.results});
  }
  if(url.pathname==="/api/people"&&req.method==="POST"){
   if(!await authenticate(req,env.DB))return json({error:"로그인이 필요합니다."},401);
@@ -65,7 +65,7 @@ async function init(db){
  await db.prepare("CREATE TABLE IF NOT EXISTS sessions(id INTEGER PRIMARY KEY AUTOINCREMENT,user_id INTEGER NOT NULL,token_hash TEXT NOT NULL UNIQUE,expires_at TEXT NOT NULL,created_at TEXT NOT NULL,FOREIGN KEY(user_id) REFERENCES users(id))").run();
  await db.prepare("UPDATE people SET is_active=0 WHERE name IN ('사람1','사람2','사람3') AND NOT EXISTS(SELECT 1 FROM stickers WHERE stickers.recipient_id=people.id) AND NOT EXISTS(SELECT 1 FROM users WHERE users.person_id=people.id)").run();
 }
-async function authenticate(req,db){const t=bearer(req);if(!t)return null;const u=await db.prepare("SELECT u.id,u.username,u.display_name FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>?").bind(await sha256(t),new Date().toISOString()).first();return u||null}
+async function authenticate(req,db){const t=bearer(req);if(!t)return null;const u=await db.prepare("SELECT u.id,u.username,u.display_name,u.person_id FROM sessions s JOIN users u ON u.id=s.user_id WHERE s.token_hash=? AND s.expires_at>?").bind(await sha256(t),new Date().toISOString()).first();return u||null}
 async function issueSession(db,u){const token=randomHex(32),now=new Date(),expires=new Date(now.getTime()+SESSION_DAYS*86400000).toISOString();await db.prepare("INSERT INTO sessions(user_id,token_hash,expires_at,created_at) VALUES(?,?,?,?)").bind(u.id,await sha256(token),expires,now.toISOString()).run();return{token,expiresAt:expires,user:{id:u.id,username:u.username,display_name:u.display_name}}}
 function bearer(r){const v=r.headers.get("Authorization")||"";return v.startsWith("Bearer ")?v.slice(7):""}
 function clean(v){if(typeof v!=="string")return"";const s=v.trim().replace(/\s+/g," ");return s.length<=30?s:""}
