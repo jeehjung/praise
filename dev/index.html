@@ -26,6 +26,19 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{text-align:left;p
 .empty{padding:18px;text-align:center;color:var(--muted);font-weight:700}.hero-tip{margin:0 auto 15px;padding:12px 16px;border-radius:18px;background:#fff;border:2px dashed #c7cfff;text-align:center;font-weight:800;color:#5d6793}
 @media(max-width:480px){main{padding:12px}.row button{width:100%}section{padding:15px}.cards{grid-template-columns:repeat(2,minmax(0,1fr));gap:9px}.person{padding:12px}.person h3{font-size:17px}.count{font-size:28px}.give{font-size:13px;padding:10px 5px}}
  .member-list{display:grid;gap:8px;margin-top:12px}.member-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border:1px solid #e8eaff;border-radius:13px;background:#fbfcff;font-weight:800}.member-row button{padding:7px 11px;background:#fff0f2;border:1px solid #ffc9d2;color:#b6425d;box-shadow:none;font-size:13px;white-space:nowrap}
+
+main{max-width:1240px}
+.dashboard-profile{display:grid;grid-template-columns:120px minmax(180px,1fr) minmax(190px,280px);gap:18px;align-items:center;padding:24px;background:linear-gradient(120deg,#fff 0%,#f8fbff 100%)}
+.profile-avatar{width:112px;height:112px;border-radius:50%;display:grid;place-items:center;font-size:64px;background:linear-gradient(145deg,#b9e6ff,#d8d0ff);border:7px solid #edf5ff}
+.eyebrow{font-size:11px;letter-spacing:2px;color:#7d8bb2;font-weight:900}.profile-main h2{font-size:clamp(25px,4vw,34px);margin:5px 0;color:#26365f}.profile-main p{margin:0;color:#73809f;font-weight:700}
+.total-box{background:#fff0f7;border-radius:18px;padding:17px;text-align:center}.total-box span,.summary-box span{display:block;font-weight:800;color:#536184}.total-box strong{display:block;font-size:42px;color:#f04f91;line-height:1.3}.total-box small{font-size:18px;margin-left:4px}
+.summary-boxes{grid-column:2/4;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.summary-box{padding:15px;border-radius:16px;text-align:center}.summary-box strong{display:block;font-size:27px;margin-top:4px}.week-box{background:#e9f9ef;color:#16814d}.month-box{background:#eaf4ff;color:#2862a5}.rank-box{background:#f2edff;color:#6847a8}
+.section-heading{align-items:center}.dashboard-section{padding:20px}
+.person{min-height:185px}.person .count{margin:5px 0 2px}.person .date-line{font-size:12px;color:#8791ad;margin:0 0 10px}
+.history-table-wrap{overflow-x:auto}table.history-table{min-width:500px;background:#fff;border:1px solid #e7ebf7;border-radius:14px;overflow:hidden}table.history-table th{background:#f2f5fc}table.history-table td,table.history-table th{padding:11px 12px}
+.history-sticker{font-size:23px}.giver-pill{display:inline-block;padding:4px 10px;border-radius:20px;background:#e8f4ff;color:#2363aa;font-weight:800}
+@media(max-width:650px){main{padding:10px}.dashboard-profile{grid-template-columns:72px minmax(0,1fr);gap:12px;padding:16px}.profile-avatar{width:68px;height:68px;font-size:39px;border-width:4px}.profile-main h2{font-size:22px}.profile-main p{font-size:12px}.total-box{grid-column:1/3;display:flex;align-items:center;justify-content:space-between;padding:10px 15px}.total-box strong{font-size:30px}.summary-boxes{grid-column:1/3;gap:7px}.summary-box{padding:10px 5px}.summary-box span{font-size:12px}.summary-box strong{font-size:21px}.dashboard-section{padding:14px}.section-heading{align-items:flex-start}.section-heading input{max-width:155px}.person{min-height:160px}}
+
 .latest-update{max-width:900px;margin:0 auto;padding:8px 16px 24px;text-align:center;color:#9299b2;font-size:12px;font-weight:600}
 </style><style>
 .auth-panel{max-width:480px;margin:20px auto;background:#fff;border:2px solid #dfe4ff;border-radius:24px;padding:22px;box-shadow:0 6px 0 #e9eaff}
@@ -52,13 +65,19 @@ table{width:100%;border-collapse:collapse;font-size:14px}td,th{text-align:left;p
 </section>
 <div id="appContent" hidden>
 <div class="account-bar"><span id="accountLabel">🙋 로그인됨</span><button id="logout" class="soft">로그아웃</button></div>
-<div class="hero-tip">💖 오늘의 미션: 친구의 멋진 점을 찾아 칭찬 스티커를 선물해요!</div><div id="notice"></div>
-
-<section class="row" style="justify-content:space-between"><div><h3>🏆 이번 주 칭찬 현황</h3><span class="muted">월요일~일요일 기준</span></div><div><label for="week">조회할 주</label><input id="week" type="week"></div></section>
-<section><h3>🎁 친구에게 스티커 선물하기</h3><div id="people" class="cards"><div class="empty">불러오는 중…</div></div></section>
+<div id="notice"></div>
+<section class="dashboard-profile">
+ <div class="profile-avatar">🌟</div><div class="profile-main"><span class="eyebrow">MY PRAISE JOURNEY</span><h2 id="profileName">칭찬 여정을 응원해요!</h2><p>작은 칭찬이 모여 큰 힘이 돼요 💗</p></div>
+ <div class="total-box"><span>총 받은 스티커</span><strong id="totalCount">0<small>개</small></strong></div>
+ <div class="summary-boxes"><div class="summary-box week-box"><span>⭐ 이번 주</span><strong id="weekCount">0개</strong></div><div class="summary-box month-box"><span>🗓️ 이번 달</span><strong id="monthCount">0개</strong></div><div class="summary-box rank-box"><span>👑 전체 순위</span><strong id="rankCount">-</strong></div></div>
+</section>
+<section class="row section-heading" style="justify-content:space-between"><div><h3>🏆 칭찬받은 현황</h3><span class="muted">회원별 스티커 수와 기록을 확인해요</span></div><div><label for="week">조회할 주</label><input id="week" type="week"></div></section>
+<section class="dashboard-section"><h3>🌈 회원별 칭찬 현황</h3><div id="people" class="cards"><div class="empty">불러오는 중…</div></div></section>
+<section class="dashboard-section"><h3>📅 최근 칭찬 받은 기록</h3><div id="records" class="empty">불러오는 중…</div></section>
+<section><h3>🎁 친구에게 스티커 선물하기</h3><p class="muted">칭찬할 친구를 선택해 스티커를 선물해요.</p><div id="givePeople" class="cards"><div class="empty">불러오는 중…</div></div></section>
 <section><h3>➕ 새로운 친구 등록하기</h3><form id="add" class="row"><div class="field"><label for="newname">이름</label><input id="newname" maxlength="30" required placeholder="예: 사람4"></div><button class="primary">🎈 친구 추가</button></form></section>
 <section><h3>👥 회원 관리</h3><div class="field"><label for="memberSearch">회원 검색</label><input id="memberSearch" type="search" placeholder="이름으로 회원 검색"></div><div id="memberList" class="member-list"><div class="empty">회원 목록을 불러오는 중…</div></div><p class="muted">회원 삭제는 목록에서만 숨기며, 기존 칭찬 기록은 보존됩니다. 다시 추가하면 복구할 수 있어요.</p></section>
-<section><h3>📖 칭찬 추억 모아보기</h3><div id="records" class="empty">불러오는 중…</div></section>
+
 <p class="muted" style="text-align:center">기록은 공용 서버에 저장되어 누구나 확인할 수 있습니다.</p>
 </div></main>
 <footer id="latestUpdate" class="latest-update">Latest update: 확인 중…</footer>
@@ -77,11 +96,20 @@ async function showApp(){try{const me=await api("/api/auth/me");currentUser=me.u
 function currentWeek(){const d=new Date(),day=(d.getDay()+6)%7;d.setDate(d.getDate()-day+3);const f=new Date(d.getFullYear(),0,4);return d.getFullYear()+"-W"+String(1+Math.round(((d-f)/86400000-3+((f.getDay()+6)%7))/7)).padStart(2,"0")}
 $("week").value=currentWeek();
 async function load(){try{state=await api("/api/state?week="+encodeURIComponent($("week").value||currentWeek()));render()}catch(error){note("불러오기 실패: "+error.message)}}
-function render(){if(!state)return;
-renderMemberList();
-$("people").innerHTML=state.people.map(person=>'<article class="person"><div class="avatar">🌟</div><h3>'+esc(person.name)+'</h3><span class="muted">이번 주 받은 칭찬</span><div class="count">'+person.stickers+'개</div><button class="primary give" data-id="'+person.id+'">💝 칭찬 선물하기</button></article>').join("")||'<div class="empty">등록된 친구가 없습니다.</div>';
-document.querySelectorAll(".give").forEach(button=>button.onclick=async()=>{button.disabled=true;try{await api("/api/stickers",{method:"POST",body:JSON.stringify({recipientId:+button.dataset.id,week:$("week").value||currentWeek()})});note("🎉 멋져요! 칭찬 스티커를 선물했어요!");await load()}catch(error){note(error.message);button.disabled=false}});
-$("records").innerHTML=state.recent.length?'<table><thead><tr><th>받은 사람</th><th>준 사람</th><th>시간</th></tr></thead><tbody>'+state.recent.map(record=>'<tr><td>'+esc(record.recipient)+'</td><td>'+esc(record.giver_name)+'</td><td>'+new Date(record.created_at).toLocaleString("ko-KR",{month:"numeric",day:"numeric",hour:"2-digit",minute:"2-digit"})+'</td></tr>').join("")+'</tbody></table>':'<div class="empty">이 주에는 아직 기록이 없습니다.</div>'}
+function render(){
+ if(!state)return;
+ renderMemberList();
+ const mine=state.people.find(p=>p.id===currentUser?.person_id);
+ const total=mine?.total_stickers||0,week=mine?.week_stickers||0,month=mine?.month_stickers||0;
+ const rank=mine?1+state.people.filter(p=>(p.total_stickers||0)>total).length:"-";
+ $("profileName").textContent=(currentUser?.display_name||"나")+"님의 칭찬 여정";
+ $("totalCount").innerHTML=total+'<small>개</small>';$("weekCount").textContent=week+"개";$("monthCount").textContent=month+"개";$("rankCount").textContent=rank+"위";
+ const ordered=[...state.people].sort((a,b)=>(b.total_stickers||0)-(a.total_stickers||0));
+ $("people").innerHTML=ordered.map((p,i)=>'<article class="person"><div class="avatar">'+(i===0?"👑":"🌟")+'</div><h3>'+esc(p.name)+'</h3><span class="muted">이번 주 '+(p.stickers||0)+'개 · 누적 '+(p.total_stickers||0)+'개</span><div class="count">'+(p.stickers||0)+'개</div><p class="date-line">이번 달 '+(p.month_stickers||0)+'개</p></article>').join("")||'<div class="empty">등록된 회원이 없습니다.</div>';
+ $("givePeople").innerHTML=state.people.map(p=>'<article class="person"><div class="avatar">🌟</div><h3>'+esc(p.name)+'</h3><span class="muted">이번 주 받은 칭찬</span><div class="count">'+(p.stickers||0)+'개</div><button class="primary give" data-id="'+p.id+'">💝 칭찬 선물하기</button></article>').join("")||'<div class="empty">등록된 친구가 없습니다.</div>';
+ document.querySelectorAll(".give").forEach(button=>button.onclick=async()=>{button.disabled=true;try{await api("/api/stickers",{method:"POST",body:JSON.stringify({recipientId:+button.dataset.id,week:$("week").value||currentWeek()})});note("🎉 멋져요! 칭찬 스티커를 선물했어요!");await load()}catch(error){note(error.message);button.disabled=false}});
+ $("records").innerHTML=state.recent.length?'<div class="history-table-wrap"><table class="history-table"><thead><tr><th>날짜</th><th>스티커</th><th>받은 사람</th><th>보낸 사람</th></tr></thead><tbody>'+state.recent.map(record=>'<tr><td>'+new Date(record.created_at).toLocaleDateString("ko-KR",{year:"numeric",month:"2-digit",day:"2-digit"})+'</td><td><span class="history-sticker">⭐</span></td><td>'+esc(record.recipient)+'</td><td><span class="giver-pill">'+esc(record.giver_name)+'</span></td></tr>').join("")+'</tbody></table></div>':'<div class="empty">선택한 주에는 아직 칭찬 기록이 없습니다.</div>';
+}
 function renderMemberList(){
  const q=$("memberSearch").value.trim().toLocaleLowerCase("ko-KR");
  const members=state.people.filter(p=>p.name.toLocaleLowerCase("ko-KR").includes(q));
